@@ -10,7 +10,7 @@ let App = angular.module('app', [
   'ui.router',
   'firebase',
 
-  'tiy.user'
+  'jb.user'
 ]);
 
 function config($urlRouterProvider) {

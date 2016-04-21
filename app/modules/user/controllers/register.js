@@ -3,16 +3,26 @@ class RegisterController {
     this._$state = $state;
     this._UserService = UserService;
 
-    /* STEP 1 - Create a variable newUser and set it to
-      our empty user object from the UserService */
+    this.newUser = this._UserService.new();
+    this.newProfile = this._UserService.newProfile();
   }
 
-  /* STEP 2 - Call create on UserService and pass in your
-    newUser variable. This returns a promise. In your
-    .then, use $state.go to send them to the profile page
-  */
-
   register() {
+    this._UserService.create(this.newUser)
+      .then((response) => {
+        this.user = response;
+        this.profile = this._UserService.getProfile(this.user);
+
+        // TODO for in
+        this.profile.firstName = this.newProfile.firstName;
+        this.profile.lastName = this.newProfile.lastName;
+
+        this._UserService.save(this.profile);
+        this._$state.go("profile");
+      })
+      .catch((error) => {
+        console.error(error);
+      })
   }
 }
 

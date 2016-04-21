@@ -1,51 +1,85 @@
 class UserService {
-  constructor($q, $firebaseAuth) {
+  constructor($q, $firebaseAuth, $firebaseObject) {
     this._$q = $q;
     this._$firebaseObject = $firebaseObject;
 
-    /* STEP 1 - ADD YOUR URL HERE */
-    this.ref = new Firebase("your firebase url");
+    this.ref = new Firebase("https://jb-registration.firebaseio.com/");
     this.auth = $firebaseAuth(this.ref);
+
+    this.profile = {};
   }
 
   isLoggedIn() {
-    return this.auth.$requireAuth();
+    return new this._$q((resolve, reject) => {
+      this.auth.$requireAuth()
+        .then((response) => {
+          this.user = response;
+          this.profile = this.getProfile(this.user);
+          resolve(this.user);
+        })
+        .catch((error) => {
+          reject(error);
+        });
+    });
   }
 
-  /* STEP 2 - There's a promise below. Inside of it,
-    use $authWithPassword (FIREBASE DOCS!) to attempt
-    to login the provided user. That returns a promise.
-    If that promise succeeds, set this.user to its response,
-    and resolve this.user. If it fails, catch the error, and
-    reject with the error.
-  */
+  getProfile(user) {
+    return this._$firebaseObject(this.ref.child('users').child(user.uid).child("profile"));
+  }
+
   login(user) {
     return new this._$q((resolve, reject) => {
-    });
+      this.auth.$authWithPassword(user)
+        .then((response) => {
+          this.user = response;
+          this.profile = this.getProfile(this.user);
+          resolve(this.user);
+        })
+        .catch((error) => {
+          reject(error);
+          console.error("Authentication failed:", error);
+        });
+      });
   }
 
-  /* STEP 3 - Unauthorize the user. Firebase API docs! */
   logout() {
+    this.auth.$unauth();
   }
 
-  /* STEP 4 - Return an object representing a "new" user with
-    a blanK email and password */
   new() {
+    return {
+      email: "",
+      password: ""
+    }
   }
 
-  /* STEP 5 - Below is a promise. Inside of it, use $createUser
-    (FIREBASE DOCS!) to create the user with the information
-    we've been provided. Respond to the promise, and call
-    $authWithPassword on the user's information to log them in.
-    Return this new promise, and respond to it with another .then.
-    Store the response from this as this.user, then resolve this.user.
-    If it fails for any reason, catch the error and reject with the
-    error as the message. This is almost line for line done in the
-    Firebase documentation for $createUser.
-  */
+  newProfile() {
+    return {
+      firstName: "",
+      lastName: ""
+    }
+  }
+
   create(user) {
     return new this._$q((resolve, reject) => {
+      this.auth.$createUser(user)
+        .then((response) => {
+          return this.auth.$authWithPassword(user);
+        })
+        .then((response) => {
+          this.user = response;
+          this.profile = this.getProfile(this.user);
+          resolve(this.user);
+        })
+        .catch((error) => {
+          reject(error);
+        });
     });
+  }
+
+  save(profile) {
+    this.profile = profile;
+    this.profile.$save();
   }
 
 }
